@@ -11,7 +11,7 @@ using System.Net;
 
 namespace TSWVote
 {
-	[ApiVersion(1, 25)]
+	[ApiVersion(2, 0)]
 	public class TSWVote : TerrariaPlugin
 	{
 		public override string Name
