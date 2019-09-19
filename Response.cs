@@ -4,9 +4,11 @@ namespace TSWVote
 {
 	internal class Response
 	{
+#pragma warning disable 0649
 		public string response;
 		public string message;
 		public string question;
+#pragma warning restore 0649
 
 		public static Response Read(string text)
 		{

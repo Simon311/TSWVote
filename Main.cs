@@ -7,11 +7,14 @@ using System.Linq;
 using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
+using TShockAPI.DB;
 using System.Net;
+using System.IO;
+using System.Security.Cryptography;
 
 namespace TSWVote
 {
-	[ApiVersion(2, 0)]
+	[ApiVersion(2, 1)]
 	public class TSWVote : TerrariaPlugin
 	{
 		public override string Name
@@ -87,7 +90,9 @@ namespace TSWVote
 		private void OnChat(ServerChatEventArgs args)
 		{
 			if (!args.Text.StartsWith("/vote"))
+			{
 				return;
+			}
 
 			var player = TShock.Players[args.Who];
 
@@ -109,7 +114,10 @@ namespace TSWVote
 				CommandArgs e = new CommandArgs(args.Text, player, new List<string>());
 				string Args = M.Groups[1].Value;
 
-				if (!IPs.ContainsKey(player.IP)) IPs.Add(player.IP, new VoteIP(DateTime.Now));
+				if (!IPs.ContainsKey(player.IP))
+				{
+					IPs.Add(player.IP, new VoteIP(DateTime.Now));
+				}
 
 				if (!string.IsNullOrWhiteSpace(Args))
 				{
@@ -138,10 +146,10 @@ namespace TSWVote
 				return;
 			}
 
-			int id;
-			string message;
-			if (!GetServerID(out id, out message))
+			if (!GetServerID(out int id, out string message))
+			{
 				SendError("Configuration", message);
+			}
 
 			if (TShock.Config.RestApiEnabled == false)
 			{
@@ -152,11 +160,13 @@ namespace TSWVote
 			Commands.ChatCommands.Add(new Command(TSWConfig.RequirePermission ? TSWConfig.PermissionName : null, delegate { }, "vote"));
 			// ^ We're making sure the command can be seen in /help. It does nothing though.
 
-			Commands.ChatCommands.Add(new Command("vote.changeid", ChangeID, "tserverweb"));
+			Commands.ChatCommands.Add(new Command(new List<string> { "vote.changeid", "vote.ping" }, ChangeID, "tserverweb"));
 
 			Commands.ChatCommands.Add(new Command("vote.checkversion", CheckVersion, "tswversioncheck"));
 
 			Commands.ChatCommands.Add(new Command("vote.admin", Clear, "voteclear"));
+
+			Commands.ChatCommands.Add(new Command("vote.autosetup", AutoSetup, "tswautosetup"));
 		}
 
 		private void Clear(CommandArgs e)
@@ -169,7 +179,9 @@ namespace TSWVote
 					IPs.Remove(e.Player.IP);
 				}
 				else
+				{
 					e.Player.SendSuccessMessage(string.Format("[TServerWeb] No state for IP {0} found.", e.Player.IP));
+				}
 				return;
 			}
 
@@ -200,7 +212,9 @@ namespace TSWVote
 					IPs.Remove(T.IP);
 				}
 				else
+				{
 					e.Player.SendSuccessMessage(string.Format("[TServerWeb] No state for IP {0} found.", T.IP));
+				}
 
 				return;
 			}
@@ -229,7 +243,10 @@ namespace TSWVote
 
 		private void validateCAPTCHA(CommandArgs e)
 		{
-			if (!IPs.ContainsKey(e.Player.IP)) IPs[e.Player.IP] = new VoteIP(DateTime.Now);
+			if (!IPs.ContainsKey(e.Player.IP))
+			{
+				IPs[e.Player.IP] = new VoteIP(DateTime.Now);
+			}
 			VoteIP IP = IPs[e.Player.IP];
 
 			if (IP.State != VoteState.Captcha)
@@ -238,9 +255,7 @@ namespace TSWVote
 				return;
 			}
 
-			int id;
-			string message;
-			if (!GetServerID(out id, out message))
+			if (!GetServerID(out int id, out string message))
 			{
 				Fail("Configuration", message, e.Player, IP);
 				return;
@@ -261,9 +276,59 @@ namespace TSWVote
 			}
 		}
 
+		private void AutoSetup(CommandArgs e)
+		{
+			if (TShock.Groups.GroupExists("tserverweb"))
+			{
+				e.Player.SendInfoMessage("It seems you've already set things up. Group \"tserverweb\" exists!");
+				return;
+			}
+
+			try
+			{
+				TShock.Groups.AddGroup("tserverweb", null,
+					"tshock.rest.useapi,tshock.rest.users.info,tshock.rest.command,vote.ping",
+					TShockAPI.Group.defaultChatColor);
+
+				string userpassword;
+				string resttoken;
+				string postfix;
+				using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+				{
+					byte[] randomData = new byte[36];
+					rng.GetBytes(randomData);
+					userpassword = RandomTools.GetPasswordFromBytes(randomData, 0, 16);
+					resttoken = RandomTools.GetPasswordFromBytes(randomData, 16, 16);
+					postfix = RandomTools.GetPasswordFromBytes(randomData, 32, 4);
+				}
+
+				var tswuser = new User();
+				tswuser.Name = "tserverweb" + postfix;
+				tswuser.CreateBCryptHash(userpassword);
+				tswuser.Group = "tserverweb";
+				TShock.Users.AddUser(tswuser);
+
+				TShock.Config.ApplicationRestTokens.Add(resttoken, new Rests.SecureRest.TokenData() { Username = tswuser.Name, UserGroupName = tswuser.Group });
+				TShock.Config.Write(Path.Combine(TShock.SavePath, "config.json"));
+
+				File.WriteAllText(Path.Combine(TShock.SavePath, "tswtoken.txt"), resttoken);
+
+				e.Player.SendSuccessMessage("Autosetup complete! You will find the TServerWeb REST token in tshock/tswtoken.txt.");
+				e.Player.SendInfoMessage("You will have to restart your server before REST changes take effect!");
+			}
+			catch (Exception E)
+			{
+				e.Player.SendErrorMessage("Something went wrong with autosetup, sorry. Check your console or logs.");
+				TShock.Log.ConsoleError(E.ToString());
+			}
+		}
+
 		private void doVote(CommandArgs e)
 		{
-			if (!IPs.ContainsKey(e.Player.IP)) IPs[e.Player.IP] = new VoteIP(DateTime.Now);
+			if (!IPs.ContainsKey(e.Player.IP))
+			{
+				IPs[e.Player.IP] = new VoteIP(DateTime.Now);
+			}
 			VoteIP IP = IPs[e.Player.IP];
 
 			if (!IP.CanVote())
@@ -272,9 +337,7 @@ namespace TSWVote
 				return;
 			}
 
-			int id;
-			string message;
-			if (!GetServerID(out id, out message))
+			if (!GetServerID(out int id, out string message))
 			{
 				Fail("Configuration", message, e.Player, IP);
 				return;
@@ -313,9 +376,7 @@ namespace TSWVote
 		{
 			if (e.Parameters.Count == 0)
 			{
-				int id;
-				string message;
-				if (!GetServerID(out id, out message))
+				if (!GetServerID(out int id, out string message))
 				{
 					e.Player.SendErrorMessage("[TServerWeb] Server ID is currently not specified! Please type /tserverweb [number] to set it.");
 					return;
@@ -331,8 +392,13 @@ namespace TSWVote
 				return;
 			}
 
-			int newId;
-			if (int.TryParse(e.Parameters[0], out newId))
+			if (!e.Player.HasPermission("vote.changeid"))
+			{
+				e.Player.SendSuccessMessage("[TServerWeb] Pong!");
+				return;
+			}
+
+			if (int.TryParse(e.Parameters[0], out int newId))
 			{
 				TSWConfig.ServerID = newId;
 				TSWConfig.Write();
@@ -376,7 +442,10 @@ namespace TSWVote
 				return;
 			}
 
-			if (!IPs.ContainsKey(args.Player.IP)) IPs[args.Player.IP] = new VoteIP(DateTime.Now);
+			if (!IPs.ContainsKey(args.Player.IP))
+			{
+				IPs[args.Player.IP] = new VoteIP(DateTime.Now);
+			}
 			VoteIP IP = IPs[args.Player.IP];
 
 			if (e.Error != null)
@@ -446,14 +515,20 @@ namespace TSWVote
 
 		private void ReuseWC(VoteWC WC)
 		{
-			if (WC == null) return;
+			if (WC == null)
+			{
+				return;
+			}
 			webClientQueue.Enqueue(WC);
 		}
 
 		internal void Fail(string typeoffailure, string message, TSPlayer Player, VoteIP IP = null)
 		{
 			SendError(typeoffailure, message);
-			if (Player == null || !Player.Active) return;
+			if (Player == null || !Player.Active)
+			{
+				return;
+			}
 			Player.SendErrorMessage("[TServerWeb] Vote failed! Please contact an administrator.");
 			if (IPs.ContainsKey(Player.IP))
 			{
@@ -484,6 +559,29 @@ namespace TSWVote
 				w.UserAgent = "TServerWeb Vote Plugin";
 
 				return w;
+			}
+		}
+
+		internal static class RandomTools
+		{
+			private static char[] Passchars = new char[]
+			{
+				'a', 'b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+
+				'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+
+				'1','2','3','4','5','6','7','8','9','0'
+			};
+
+			internal static string GetPasswordFromBytes(byte[] random, int start, int length)
+			{
+				string password = string.Empty;
+				for (int i = start; i < start + length; i++)
+				{
+					password += Passchars[random[i] % Passchars.Length];
+				}
+
+				return password;
 			}
 		}
 	}

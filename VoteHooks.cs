@@ -9,7 +9,10 @@ namespace TSWVote
 
 		internal static void InvokeVoteSuccess(TSPlayer Player)
 		{
-			if (VoteSuccess != null) VoteSuccess.Invoke(new VoteSuccessArgs(Player));
+			if (VoteSuccess != null)
+			{
+				VoteSuccess.Invoke(new VoteSuccessArgs(Player));
+			}
 		}
 
 		public static void VoteSuccessRegister(VoteSuccessHandler Handler)

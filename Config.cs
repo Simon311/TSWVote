@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using TShockAPI;
 using Newtonsoft.Json;
 
@@ -8,7 +6,7 @@ namespace TSWVote
 {
 	internal class Config
 	{
-		internal static string cPath
+		internal static string ConfigPath
 		{
 			get { return Path.Combine(TShock.SavePath, "TSWVote.json"); }
 		}
@@ -21,15 +19,17 @@ namespace TSWVote
 
 		internal static Config Read()
 		{
-			if (!File.Exists(cPath))
-				File.WriteAllText(cPath, JsonConvert.SerializeObject(new Config(), Formatting.Indented));
+			if (!File.Exists(ConfigPath))
+			{
+				File.WriteAllText(ConfigPath, JsonConvert.SerializeObject(new Config(), Formatting.Indented));
+			}
 
-			return JsonConvert.DeserializeObject<Config>(File.ReadAllText(cPath));
+			return JsonConvert.DeserializeObject<Config>(File.ReadAllText(ConfigPath));
 		}
 
 		internal void Write()
 		{
-			File.WriteAllText(cPath, JsonConvert.SerializeObject(this, Formatting.Indented));
+			File.WriteAllText(ConfigPath, JsonConvert.SerializeObject(this, Formatting.Indented));
 		}
 	}
 }
