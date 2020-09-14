@@ -75,8 +75,7 @@ namespace TSWVote
 
 				if (webClientQueue != null)
 				{
-					VoteWC webClient;
-					while (this.webClientQueue.TryDequeue(out webClient))
+					while (webClientQueue.TryDequeue(out VoteWC webClient))
 					{
 						webClient.DownloadStringCompleted -= WebClient_DownloadStringCompleted;
 						webClient.Dispose();
@@ -232,8 +231,7 @@ namespace TSWVote
 		{
 			Uri uri = new Uri("http://www.tserverweb.com/vote.php?" + url);
 
-			VoteWC webClient;
-			if (this.webClientQueue.TryDequeue(out webClient))
+			if (webClientQueue.TryDequeue(out VoteWC webClient))
 			{
 				webClient.DownloadStringAsync(uri, userToken);
 				return true;
@@ -287,7 +285,7 @@ namespace TSWVote
 			try
 			{
 				TShock.Groups.AddGroup("tserverweb", null,
-					"tshock.rest.useapi,tshock.rest.users.info,tshock.rest.command,vote.ping",
+					"tshock.rest.useapi,tshock.rest.users.info,tshock.rest.command,vote.ping,AdminRest.allow",
 					TShockAPI.Group.defaultChatColor);
 
 				string userpassword;
@@ -302,11 +300,13 @@ namespace TSWVote
 					postfix = RandomTools.GetPasswordFromBytes(randomData, 32, 4);
 				}
 
-				var tswuser = new User();
-				tswuser.Name = "tserverweb" + postfix;
+				var tswuser = new UserAccount()
+				{
+					Name = "tserverweb" + postfix,
+					Group = "tserverweb",
+				};
 				tswuser.CreateBCryptHash(userpassword);
-				tswuser.Group = "tserverweb";
-				TShock.Users.AddUser(tswuser);
+				TShock.UserAccounts.AddUserAccount(tswuser);
 
 				TShock.Config.ApplicationRestTokens.Add(resttoken, new Rests.SecureRest.TokenData() { Username = tswuser.Name, UserGroupName = tswuser.Group });
 				TShock.Config.Write(Path.Combine(TShock.SavePath, "config.json"));

@@ -1,6 +1,7 @@
 ###Visual Studio Crap###
 *.suo
 *.user
+.vs/
 
 # Build Results 
 bin/
