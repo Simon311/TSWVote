@@ -150,7 +150,7 @@ namespace TSWVote
 				SendError("Configuration", message);
 			}
 
-			if (TShock.Config.RestApiEnabled == false)
+			if (TShock.Config.Settings.RestApiEnabled == false)
 			{
 				SendError("REST API", "REST API Not Enabled! TSWVote plugin will not load!");
 				return;
@@ -308,7 +308,7 @@ namespace TSWVote
 				tswuser.CreateBCryptHash(userpassword);
 				TShock.UserAccounts.AddUserAccount(tswuser);
 
-				TShock.Config.ApplicationRestTokens.Add(resttoken, new Rests.SecureRest.TokenData() { Username = tswuser.Name, UserGroupName = tswuser.Group });
+				TShock.Config.Settings.ApplicationRestTokens.Add(resttoken, new Rests.SecureRest.TokenData() { Username = tswuser.Name, UserGroupName = tswuser.Group });
 				TShock.Config.Write(Path.Combine(TShock.SavePath, "config.json"));
 
 				File.WriteAllText(Path.Combine(TShock.SavePath, "tswtoken.txt"), resttoken);
