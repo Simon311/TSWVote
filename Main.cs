@@ -276,14 +276,64 @@ namespace TSWVote
 
 		private void AutoSetup(CommandArgs e)
 		{
-			if (TShock.Groups.GroupExists("tserverweb"))
-			{
-				e.Player.SendInfoMessage("It seems you've already set things up. Group \"tserverweb\" exists!");
-				return;
-			}
-
 			try
 			{
+				var tokenusers = TShock.UserAccounts.GetUserAccountsByName("tserverweb");
+				var tokens = TShock.Config.Settings.ApplicationRestTokens;
+
+				if (tokens != null)
+				{
+					List<string> toRemove = new List<string>();
+					foreach (KeyValuePair<string, Rests.SecureRest.TokenData> kv in tokens)
+					{
+						if (kv.Value.UserGroupName == "tserverweb") toRemove.Add(kv.Key);
+					}
+					foreach (string key in toRemove) tokens.Remove(key);
+				}
+
+				if (TShock.Groups.GroupExists("tserverweb"))
+				{
+					UserAccount ua = null;
+					foreach (UserAccount acc in tokenusers)
+					{
+						if (acc.Group == "tserverweb")
+						{
+							ua = acc;
+							break;
+						}
+					}
+
+					if (ua != null)
+					{
+						string token = null;
+						using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+						{
+							byte[] randomData = new byte[16];
+							rng.GetBytes(randomData);
+							token = RandomTools.GetPasswordFromBytes(randomData, 0, 16);
+						}
+
+						TShock.Config.Settings.ApplicationRestTokens.Add(token, new Rests.SecureRest.TokenData() { Username = ua.Name, UserGroupName = ua.Group });
+						TShock.Config.Write(Path.Combine(TShock.SavePath, "config.json"));
+						File.WriteAllText(Path.Combine(TShock.SavePath, "tswtoken.txt"), token);
+						e.Player.SendInfoMessage("It seems you've lost your token. You will find a new one in tshock/tswtoken.txt.");
+						e.Player.SendInfoMessage("You will have to enter the new token at TServerWeb.com.");
+						e.Player.SendInfoMessage("To add permissions to TServerWeb, add them to group \"tserverweb\".");
+						e.Player.SendInfoMessage("You will have to restart your server before REST changes take effect!");
+						return;
+
+					}
+					else
+					{
+						TShock.Groups.DeleteGroup("tserverweb");
+					}
+				}
+
+				foreach (UserAccount acc in tokenusers)
+				{
+					if (acc.Group == "tserverweb") TShock.UserAccounts.RemoveUserAccount(acc);
+				}
+			
 				TShock.Groups.AddGroup("tserverweb", null,
 					"tshock.rest.useapi,tshock.rest.users.info,tshock.rest.command,vote.ping,AdminRest.allow",
 					TShockAPI.Group.defaultChatColor);
@@ -310,11 +360,12 @@ namespace TSWVote
 
 				TShock.Config.Settings.ApplicationRestTokens.Add(resttoken, new Rests.SecureRest.TokenData() { Username = tswuser.Name, UserGroupName = tswuser.Group });
 				TShock.Config.Write(Path.Combine(TShock.SavePath, "config.json"));
-
 				File.WriteAllText(Path.Combine(TShock.SavePath, "tswtoken.txt"), resttoken);
 
 				e.Player.SendSuccessMessage("Autosetup complete! You will find the TServerWeb REST token in tshock/tswtoken.txt.");
-				e.Player.SendInfoMessage("You will have to restart your server before REST changes take effect!");
+				e.Player.SendInfoMessage("To add permissions to TServerWeb, add them to group \"tserverweb\".");
+				e.Player.SendInfoMessage("Please note that re-starting this command will create a new token and delete the old one.");
+				e.Player.SendErrorMessage("You will have to restart your server before REST changes take effect!");
 			}
 			catch (Exception E)
 			{
