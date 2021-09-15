@@ -412,7 +412,7 @@ namespace TSWVote
 			}
 		}
 
-		private void Vote(CommandArgs e) // To be fair this should also have a permission.
+		private void Vote(CommandArgs e)
 		{
 			try
 			{
