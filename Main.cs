@@ -51,6 +51,10 @@ namespace TSWVote
 
 			TSWConfig = Config.Read();
 
+			// This is now needed to support TLS 1.3, at least on Windows setups.
+			ServicePointManager.Expect100Continue = true;
+			ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
 			webClientQueue = new ConcurrentQueue<VoteWC>();
 			for (int i = 0; i < TSWConfig.NumberOfWebClients; i++)
 			{
@@ -501,8 +505,15 @@ namespace TSWVote
 
 			if (e.Error != null)
 			{
-				Fail("Exception", e.Error.Message, args.Player, IP);
-
+				Fail("Exception", e.Error.GetType().ToString() + " " + e.Error.Message, args.Player, IP);
+				if (e.Error.Message != null && e.Error.Message.Contains("time"))
+				{
+					TShock.Log.ConsoleError("[TServerWeb] Tip: try increasing Timeout in the TSWVote.json config file.");
+				}
+				else
+				{
+					TShock.Log.ConsoleError("[TServerWeb] If this error persists, contact us via form or Discord on tserverweb.com.");
+				}
 				ReuseWC(webClient);
 				return;
 			}

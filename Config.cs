@@ -13,7 +13,7 @@ namespace TSWVote
 
 		public int ServerID = 0;
 		public int NumberOfWebClients = 30;
-		public int Timeout = 2000;
+		public int Timeout = 10000;
 		public bool RequirePermission = false;
 		public string PermissionName = "vote.vote";
 
