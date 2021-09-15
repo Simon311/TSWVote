@@ -233,7 +233,7 @@ namespace TSWVote
 
 		private bool tswQuery(string url, object userToken = null)
 		{
-			Uri uri = new Uri("http://www.tserverweb.com/vote.php?" + url);
+			Uri uri = new Uri("https://www.tserverweb.com/vote.php?" + url);
 
 			if (webClientQueue.TryDequeue(out VoteWC webClient))
 			{
