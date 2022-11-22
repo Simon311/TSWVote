@@ -19,6 +19,16 @@ namespace TSWVote
 
 		internal static Config Read()
 		{
+			if (!Directory.Exists(TShock.SavePath))
+			{
+				// This should've probably been fixed with plugin load order,
+				// But the problem is, I remember the plugin load order already having been set up correctly.
+				// So I am going to assume something changed on TShock's side of things and this a quick fix,
+				// Until they sort out the new updates and all the recent bugs they now have.
+
+				Directory.CreateDirectory(TShock.SavePath);
+			}
+
 			if (!File.Exists(ConfigPath))
 			{
 				File.WriteAllText(ConfigPath, JsonConvert.SerializeObject(new Config(), Formatting.Indented));

@@ -9,14 +9,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutputPath>Build\</OutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <OutputPath>bin\x86\Debug\</OutputPath>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>Build\</OutputPath>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
 	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -26,25 +18,30 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>References\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Reference>
     <Reference Include="OTAPI">
       <HintPath>References\OTAPI.dll</HintPath>
+	  <Private>False</Private>
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Reference>
     <Reference Include="TerrariaServer">
       <HintPath>References\TerrariaServer.dll</HintPath>
       <Private>False</Private>
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Reference>
     <Reference Include="TShock.Server">
       <HintPath>References\TShock.Server.dll</HintPath>
+	  <Private>False</Private>
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Reference>
     <Reference Include="TShockAPI">
       <HintPath>References\TShockAPI.dll</HintPath>
       <Private>False</Private>
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Reference>
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.355802">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="del Build\TSWVote.deps.json" />
+  </Target>
 </Project>

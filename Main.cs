@@ -285,6 +285,8 @@ namespace TSWVote
 				var tokenusers = TShock.UserAccounts.GetUserAccountsByName("tserverweb");
 				var tokens = TShock.Config.Settings.ApplicationRestTokens;
 
+				byte[] randomData;
+
 				if (tokens != null)
 				{
 					List<string> toRemove = new List<string>();
@@ -310,12 +312,12 @@ namespace TSWVote
 					if (ua != null)
 					{
 						string token = null;
-						using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
-						{
-							byte[] randomData = new byte[16];
-							rng.GetBytes(randomData);
+						/*using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+						{*/
+							randomData = RandomNumberGenerator.GetBytes(16); //new byte[16];
+							//rng.GetBytes(randomData);
 							token = RandomTools.GetPasswordFromBytes(randomData, 0, 16);
-						}
+						//}
 
 						TShock.Config.Settings.ApplicationRestTokens.Add(token, new Rests.SecureRest.TokenData() { Username = ua.Name, UserGroupName = ua.Group });
 						TShock.Config.Write(Path.Combine(TShock.SavePath, "config.json"));
@@ -345,14 +347,14 @@ namespace TSWVote
 				string userpassword;
 				string resttoken;
 				string postfix;
-				using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
-				{
-					byte[] randomData = new byte[36];
-					rng.GetBytes(randomData);
+				/*using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+				{*/
+					randomData = RandomNumberGenerator.GetBytes(36); //new byte[36];
+					//rng.GetBytes(randomData);
 					userpassword = RandomTools.GetPasswordFromBytes(randomData, 0, 16);
 					resttoken = RandomTools.GetPasswordFromBytes(randomData, 16, 16);
 					postfix = RandomTools.GetPasswordFromBytes(randomData, 32, 4);
-				}
+				//}
 
 				var tswuser = new UserAccount()
 				{
